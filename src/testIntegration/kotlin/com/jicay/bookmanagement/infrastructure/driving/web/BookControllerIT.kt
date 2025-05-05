@@ -122,6 +122,7 @@ class BookControllerIT(
             contentType = APPLICATION_JSON
         }.andExpect {
             status { isNotFound() }
+
         }
     }
 })
