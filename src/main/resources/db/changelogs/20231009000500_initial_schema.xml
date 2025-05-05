@@ -28,5 +28,12 @@
 
         <addAutoIncrement tableName="book" columnName="id" />
     </changeSet>
+    <changeSet id="20231009000600" author="jicay">
+        <addColumn tableName="book">
+            <column name="reserved" type="boolean" defaultValue="false">
+                <constraints nullable="false" />
+            </column>
+        </addColumn>
+    </changeSet>
 
 </databaseChangeLog>
