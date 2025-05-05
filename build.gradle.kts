@@ -64,6 +64,7 @@ dependencies {
     testImplementation("io.kotest:kotest-runner-junit5:5.9.1")
     testImplementation("info.solidsoft.gradle.pitest:gradle-pitest-plugin:1.15.0")
     testImplementation("io.kotest.extensions:kotest-extensions-pitest:1.2.0")
+    testImplementation("io.kotest:kotest-assertions-core:5.6.2")
 
     testIntegrationImplementation("io.mockk:mockk:1.13.8")
     testIntegrationImplementation("io.kotest:kotest-assertions-core:5.9.1")

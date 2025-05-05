@@ -10,6 +10,7 @@ import io.kotest.property.arbitrary.next
 import io.kotest.property.arbitrary.stringPattern
 import io.kotest.property.checkAll
 
+
 class InMemoryBookPort : BookPort {
     private val books = mutableListOf<Book>()
 
@@ -57,4 +58,4 @@ class BookUseCasePropertyTest : FunSpec({
             res.map { it.name } shouldContainExactly titles.sorted()
         }
     }
-})
+   })

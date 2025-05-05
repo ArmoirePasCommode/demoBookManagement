@@ -5,7 +5,9 @@ import com.jicay.bookmanagement.domain.usecase.BookUseCase
 import com.ninjasquad.springmockk.MockkBean
 import io.kotest.core.spec.style.FunSpec
 import io.kotest.extensions.spring.SpringExtension
+import io.mockk.Runs
 import io.mockk.every
+import io.mockk.just
 import io.mockk.justRun
 import io.mockk.verify
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest
@@ -90,5 +92,36 @@ class BookControllerIT(
         }
 
         verify(exactly = 0) { bookUseCase.addBook(any()) }
+    }
+    test("reserve a book via REST endpoint") {
+        every { bookUseCase.reserveBook("Les Misérables") } just Runs
+
+        mockMvc.post("/books/Les Misérables/reserve") {
+            contentType = APPLICATION_JSON
+        }.andExpect {
+            status { isOk() }
+        }
+
+        verify(exactly = 1) { bookUseCase.reserveBook("Les Misérables") }
+    }
+
+    test("reserveBook should return 400 if the book is already reserved") {
+        every { bookUseCase.reserveBook("Les Misérables") } throws IllegalStateException("Book is already reserved")
+
+        mockMvc.post("/books/Les Misérables/reserve") {
+            contentType = APPLICATION_JSON
+        }.andExpect {
+            status { isBadRequest() }
+        }
+    }
+
+    test("reserveBook should return 404 if the book does not exist") {
+        every { bookUseCase.reserveBook("Unknown Book") } throws IllegalArgumentException("Book not found")
+
+        mockMvc.post("/books/Unknown Book/reserve") {
+            contentType = APPLICATION_JSON
+        }.andExpect {
+            status { isNotFound() }
+        }
     }
 })

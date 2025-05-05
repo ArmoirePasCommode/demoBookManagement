@@ -1,8 +1,6 @@
 package com.jicay.bookmanagement.infrastructure.driven.adapter
 
 import com.jicay.bookmanagement.domain.model.Book
-import com.zaxxer.hikari.HikariConfig
-import com.zaxxer.hikari.HikariDataSource
 import io.kotest.assertions.assertSoftly
 import io.kotest.core.spec.style.FunSpec
 import io.kotest.extensions.spring.SpringExtension
@@ -14,6 +12,7 @@ import io.kotest.matchers.types.shouldBeInstanceOf
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.test.context.ActiveProfiles
 import org.testcontainers.containers.PostgreSQLContainer
+import io.kotest.assertions.throwables.shouldThrow
 import java.sql.ResultSet
 
 @SpringBootTest
@@ -32,7 +31,6 @@ class BookDAOIT(
         }
 
         test("get all books from db") {
-            // GIVEN
             performQuery(
                 // language=sql
                 """
@@ -44,21 +42,18 @@ class BookDAOIT(
             """.trimIndent()
             )
 
-            // WHEN
             val res = bookDAO.getAllBooks()
 
-            // THEN
             res.shouldContainExactlyInAnyOrder(
-                Book("Hamlet", "Shakespeare"), Book("Les fleurs du mal", "Beaudelaire"), Book("Harry Potter", "Rowling")
+                Book("Hamlet", "Shakespeare"),
+                Book("Les fleurs du mal", "Beaudelaire"),
+                Book("Harry Potter", "Rowling")
             )
         }
 
         test("create book in db") {
-            // GIVEN
-            // WHEN
             bookDAO.createBook(Book("Les misérables", "Victor Hugo"))
 
-            // THEN
             val res = performQuery(
                 // language=sql
                 "SELECT * from book"
@@ -69,6 +64,42 @@ class BookDAOIT(
                 this["id"].shouldNotBeNull().shouldBeInstanceOf<Int>()
                 this["title"].shouldBe("Les misérables")
                 this["author"].shouldBe("Victor Hugo")
+            }
+        }
+
+        test("reserve a book in db") {
+            performQuery(
+                // language=sql
+                """
+                INSERT INTO book (title, author, reserved)
+                VALUES ('Les Misérables', 'Victor Hugo', false);
+                """.trimIndent()
+            )
+
+            bookDAO.reserveBook("Les Misérables")
+
+            val res = performQuery(
+                // language=sql
+                "SELECT reserved FROM book WHERE title = 'Les Misérables';"
+            )
+
+            res.first()["reserved"] shouldBe true
+        }
+
+        test("reserveBook should throw an exception if the book is already reserved") {
+            // Insert the book as available
+            performQuery(
+                // language=sql
+                """
+                INSERT INTO book (title, author, reserved)
+                VALUES ('Les Misérables', 'Victor Hugo', false);
+                """.trimIndent()
+            )
+            // First reservation should succeed
+            bookDAO.reserveBook("Les Misérables")
+            // Second reservation should fail
+            shouldThrow<IllegalStateException> {
+                bookDAO.reserveBook("Les Misérables")
             }
         }
 
@@ -102,13 +133,13 @@ class BookDAOIT(
         }
 
         fun performQuery(sql: String): List<Map<String, Any>> {
-            val hikariConfig = HikariConfig()
-            hikariConfig.setJdbcUrl(container.jdbcUrl)
+            val hikariConfig = com.zaxxer.hikari.HikariConfig()
+            hikariConfig.jdbcUrl = container.jdbcUrl
             hikariConfig.username = container.username
             hikariConfig.password = container.password
-            hikariConfig.setDriverClassName(container.driverClassName)
+            hikariConfig.driverClassName = container.driverClassName
 
-            val ds = HikariDataSource(hikariConfig)
+            val ds = com.zaxxer.hikari.HikariDataSource(hikariConfig)
 
             val statement = ds.connection.createStatement()
             statement.execute(sql)

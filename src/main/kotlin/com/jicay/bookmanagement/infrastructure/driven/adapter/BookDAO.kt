@@ -30,9 +30,12 @@ class BookDAO(private val namedParameterJdbcTemplate: NamedParameterJdbcTemplate
     }
 
     override fun reserveBook(name: String) {
-        namedParameterJdbcTemplate.update(
+        val affectedRows = namedParameterJdbcTemplate.update(
             "UPDATE BOOK SET reserved = true WHERE title = :title AND reserved = false",
             mapOf("title" to name)
         )
+        if (affectedRows == 0) {
+            throw IllegalStateException("Book is already reserved")
+        }
     }
 }

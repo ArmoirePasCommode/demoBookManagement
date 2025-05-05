@@ -8,6 +8,7 @@ import io.mockk.every
 import io.mockk.justRun
 import io.mockk.mockk
 import io.mockk.verify
+import io.kotest.assertions.throwables.shouldThrow
 
 class BookUseCaseTest : FunSpec({
 
@@ -38,4 +39,53 @@ class BookUseCaseTest : FunSpec({
         verify(exactly = 1) { bookPort.createBook(book) }
     }
 
+    test("get all books should returns all books sorted by name") {
+        every { bookPort.getAllBooks() } returns listOf(
+            Book("Harry Potter", "J.K. Rowling"),
+            Book("Hamlet", "William Shakespeare")
+        )
+
+        val res = bookUseCase.getAllBooks()
+
+        res.shouldContainExactly(
+            Book("Hamlet", "William Shakespeare"),
+            Book("Harry Potter", "J.K. Rowling")
+        )
+    }
+
+    test("add book") {
+        justRun { bookPort.createBook(any()) }
+
+        val book = Book("Harry Potter", "J.K. Rowling")
+
+        bookUseCase.addBook(book)
+
+        verify(exactly = 1) { bookPort.createBook(book) }
+    }
+    test("reserveBook should reserve a book if it is available") {
+        val book = Book("Les Misérables", "Victor Hugo", reserved = false)
+        every { bookPort.getAllBooks() } returns listOf(book)
+        justRun { bookPort.reserveBook("Les Misérables") }
+
+        bookUseCase.reserveBook("Les Misérables")
+
+        verify(exactly = 1) { bookPort.reserveBook("Les Misérables") }
+    }
+
+    test("reserveBook should throw an exception if the book is already reserved") {
+        val book = Book("Les Misérables", "Victor Hugo", reserved = true)
+        every { bookPort.getAllBooks() } returns listOf(book)
+
+        shouldThrow<IllegalStateException> {
+            bookUseCase.reserveBook("Les Misérables")
+        }
+    }
+
+    test("reserveBook should throw an exception if the book does not exist") {
+        every { bookPort.getAllBooks() } returns emptyList()
+
+        shouldThrow<IllegalArgumentException> {
+            bookUseCase.reserveBook("Unknown Book")
+        }
+    }
 })
